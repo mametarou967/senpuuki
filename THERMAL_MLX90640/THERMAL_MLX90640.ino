@@ -92,6 +92,13 @@ long loopTime, startTime, endTime, fps;
 #define THRESHOLD 30
 bool relayValue = false;
 
+// for angle
+#define GPIO_ANGLE_COM  36
+#define THRESHOLD_MIN 25
+#define THRESHOLD_MAX 35
+int thresholdResolution = 4096 / (THRESHOLD_MAX - THRESHOLD_MIN); // 4096 : 12 bit adc
+int thresholdValue = 30;
+
 void setRelay(bool value){
   relayValue = value;
   if(value){
@@ -159,6 +166,8 @@ void setup()
   // for relay
   pinMode(GPIO_RELAY_COM, OUTPUT);
   setRelay(false);
+  // for angle
+  pinMode(GPIO_ANGLE_COM, INPUT);
 }
 
 
@@ -275,11 +284,17 @@ void loop()
   {
     bool preRelayValue = relayValue;
     
-    if((spot_f >= (float)THRESHOLD) && relayValue == false){
+    if((spot_f >= (float)thresholdValue) && relayValue == false){
       setRelay(true);  
-    }else if((spot_f < (float)THRESHOLD) && relayValue == true){
+    }else if((spot_f < (float)thresholdValue) && relayValue == true){
       setRelay(false);  
     }
+  }
+
+  // for angle
+  {
+    int cur_sensorValue = analogRead(GPIO_ANGLE_COM);
+    thresholdValue = (cur_sensorValue / thresholdResolution) + THRESHOLD_MIN;
   }
   
   for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
@@ -309,7 +324,8 @@ void loop()
   }
   else
   {
-    M5.Lcd.print("TH:");
+    M5.Lcd.print("     TH:");
+    M5.Lcd.print(thresholdValue,1);
     M5.Lcd.printf("C");
     M5.Lcd.setCursor(180, 94); // update spot temp text
     M5.Lcd.print(spot_f, 2);
