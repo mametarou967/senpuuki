@@ -87,6 +87,19 @@ void interpolate_image(float *src, uint8_t src_rows, uint8_t src_cols, float *de
 
 long loopTime, startTime, endTime, fps;
 
+// for relay
+#define THRESHOLD 30
+bool relayValue = false;
+
+void setRelay(bool value){
+  relayValue = value;
+  if(value){
+    digitalWrite(26, HIGH);
+  }else{
+    digitalWrite(26, LOW);
+  }
+}
+
 void setup()
 {
   M5.begin();
@@ -100,6 +113,7 @@ void setup()
   M5.Lcd.fillScreen(TFT_BLACK);
   M5.Lcd.setTextColor(YELLOW, BLACK);
 
+  // for thermal
   while (!Serial); //Wait for user to open terminal
   Serial.println("M5Stack MLX90640 IR Camera");
   M5.Lcd.setTextSize(2);
@@ -138,6 +152,11 @@ void setup()
     icolor++;
   }
   infodisplay();
+
+  // for relay
+  dacWrite(25, 0);
+  pinMode(26, OUTPUT);
+  setRelay(false);
 }
 
 
@@ -145,44 +164,6 @@ void loop()
 {
   loopTime = millis();
   startTime = loopTime;
-  ///////////////////////////////
-  // Set Min Value - LongPress //
-  ///////////////////////////////
-  if (M5.BtnA.pressedFor(1000)) {
-    if (MINTEMP <= 5 )
-    {
-      MINTEMP = MAXTEMP - 5;
-    }
-    else
-    {
-      MINTEMP = MINTEMP - 5;
-    }
-    infodisplay();
-  }
-
-  ///////////////////////////////
-  // Set Min Value - SortPress //
-  ///////////////////////////////
-  if (M5.BtnA.wasPressed()) {
-    if (MINTEMP <= 0)
-    {
-      MINTEMP = MAXTEMP - 1;
-    }
-    else
-    {
-      MINTEMP--;
-    }
-    infodisplay();
-  }
-
-  /////////////////////
-  // Reset settings  //
-  /////////////////////
-  if (M5.BtnB.wasPressed()) {
-    MINTEMP = min_v - 1;
-    MAXTEMP = max_v + 1;
-    infodisplay();
-  }
 
   ////////////////
   // Power Off  //
@@ -287,9 +268,19 @@ void loop()
   int spot_v = pixels[360];
   spot_v = pixels[768/2];
   spot_f = pixels[768/2];
-//while(1);
+
+  // for relay
+  {
+    bool preRelayValue = relayValue;
+    
+    if((spot_f >= (float)THRESHOLD) && relayValue == false){
+      setRelay(true);  
+    }else if((spot_f < (float)THRESHOLD) && relayValue == true){
+      setRelay(false);  
+    }
+  }
   
-   for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
+  for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
   {
     if ( pixels[itemp] > max_v )
     {
