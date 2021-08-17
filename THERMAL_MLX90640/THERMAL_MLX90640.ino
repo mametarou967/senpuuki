@@ -88,15 +88,16 @@ void interpolate_image(float *src, uint8_t src_rows, uint8_t src_cols, float *de
 long loopTime, startTime, endTime, fps;
 
 // for relay
+#define GPIO_RELAY_COM  17
 #define THRESHOLD 30
 bool relayValue = false;
 
 void setRelay(bool value){
   relayValue = value;
   if(value){
-    digitalWrite(26, HIGH);
+    digitalWrite(GPIO_RELAY_COM, HIGH);
   }else{
-    digitalWrite(26, LOW);
+    digitalWrite(GPIO_RELAY_COM, LOW);
   }
 }
 
@@ -153,9 +154,10 @@ void setup()
   }
   infodisplay();
 
-  // for relay
+  // disable speaker noise
   dacWrite(25, 0);
-  pinMode(26, OUTPUT);
+  // for relay
+  pinMode(GPIO_RELAY_COM, OUTPUT);
   setRelay(false);
 }
 
@@ -307,18 +309,11 @@ void loop()
   }
   else
   {
-    M5.Lcd.print("Min:");
-    M5.Lcd.print(min_v, 1);
-    M5.Lcd.print("C  ");
-    M5.Lcd.print("Max:");
-    M5.Lcd.print(max_v, 1);
-    M5.Lcd.print("C");
+    M5.Lcd.print("TH:");
+    M5.Lcd.printf("C");
     M5.Lcd.setCursor(180, 94); // update spot temp text
     M5.Lcd.print(spot_f, 2);
     M5.Lcd.printf("C");
-    //M5.Lcd.drawCircle(160, 100, 6, TFT_WHITE);     // update center spot icon
-    //M5.Lcd.drawLine(160, 90, 160, 110, TFT_WHITE); // vertical line
-    //M5.Lcd.drawLine(150, 100, 170, 100, TFT_WHITE); // horizontal line
     M5.Lcd.drawCircle(160, 120, 6, TFT_WHITE);     // update center spot icon
     M5.Lcd.drawLine(160, 110, 160, 130, TFT_WHITE); // vertical line
     M5.Lcd.drawLine(150, 120, 170, 120, TFT_WHITE); // horizontal line
