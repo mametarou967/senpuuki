@@ -8,6 +8,13 @@
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
+// for angle
+#define GPIO_ANGLE_COM  32
+#define THRESHOLD_MIN 25
+#define THRESHOLD_MAX 35
+int thresholdResolution = 2703 / (THRESHOLD_MAX - THRESHOLD_MIN + 1); // 2703 : 12 bit adc 5 / 4096 * 3.3 = 2703
+int thresholdValue = 30;
+
 // address
 const byte OLED_SSD1315_address = 0x3c; 
 const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
@@ -93,6 +100,28 @@ long loopTime, startTime, endTime, fps;
 
 SSD1306  display(OLED_SSD1315_address, PIN_I2C_SDA, PIN_I2C_SCL); //SSD1306インスタンスの作成（I2Cアドレス,SDA,SCL）
 
+void displayValue(int currentValue,int thresholdValue)
+{
+  static int preCurrentValue = 0;
+  static int preThresholdValue = 0;
+
+  if((currentValue == preCurrentValue) && (thresholdValue == preThresholdValue)){
+    // do nothing
+  }else{
+    // 初期化
+    display.clear();
+    display.display();   //指定された情報を描画
+    String current = String(currentValue);
+    String th = String(thresholdValue);
+    display.drawString(0, 0, current);
+    display.drawString(0, 16, th);
+    display.display();   //指定された情報を描画
+  }
+
+  preCurrentValue = currentValue;
+  preThresholdValue = thresholdValue;
+}
+
 void setup()
 {
   Wire.begin();
@@ -129,11 +158,17 @@ void setup()
   pinMode(PIN_BUZZAR, OUTPUT);
   digitalWrite(PIN_BUZZAR, LOW);
 
+  // for angle
+  pinMode(GPIO_ANGLE_COM, INPUT);
+
+  // for display
   display.init();    //ディスプレイを初期化
   display.setFont(ArialMT_Plain_16);    //フォントを設定
-  display.drawString(0, 0, "Hello World");    //(0,0)の位置にHello Worldを表示
-  display.display();   //指定された情報を描画
+
+  displayValue(0,30);
 }
+
+
 
 
 void loop()
@@ -227,7 +262,14 @@ void loop()
   min_v = MAXTEMP;
   int spot_v = pixels[360];
   spot_v = pixels[768/2];
-  Serial.println(spot_v);
+  
+  // for angle
+  {
+    int cur_sensorValue = analogRead(GPIO_ANGLE_COM);
+    thresholdValue = (cur_sensorValue / thresholdResolution) + THRESHOLD_MIN;
+  }
+
+  displayValue((int)spot_v,thresholdValue);
   
    for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
   {
