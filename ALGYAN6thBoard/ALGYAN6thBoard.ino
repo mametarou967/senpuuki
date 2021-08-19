@@ -1,12 +1,17 @@
-/*
-    Description: Read the THERMAL Unit (MLX90640 IR array) temperature pixels and display it on the screen.
-*/
 #include <Wire.h>
+#include "SSD1306.h"//ディスプレイ用ライブラリを読み込み
 
 #include "MLX90640_API.h"
 #include "MLX90640_I2C_Driver.h"
 
+// Pin define
+#define PIN_I2C_SDA 21
+#define PIN_I2C_SCL 22
+
+// address
+const byte OLED_SSD1315_address = 0x3c; 
 const byte MLX90640_address = 0x33; //Default 7-bit unshifted address of the MLX90640
+
 #define TA_SHIFT 8 //Default shift for MLX90640 in open air
 
 #define COLS 32
@@ -86,6 +91,8 @@ void interpolate_image(float *src, uint8_t src_rows, uint8_t src_cols, float *de
 
 long loopTime, startTime, endTime, fps;
 
+SSD1306  display(OLED_SSD1315_address, PIN_I2C_SDA, PIN_I2C_SCL); //SSD1306インスタンスの作成（I2Cアドレス,SDA,SCL）
+
 void setup()
 {
   Wire.begin();
@@ -121,6 +128,11 @@ void setup()
   
   pinMode(PIN_BUZZAR, OUTPUT);
   digitalWrite(PIN_BUZZAR, LOW);
+
+  display.init();    //ディスプレイを初期化
+  display.setFont(ArialMT_Plain_16);    //フォントを設定
+  display.drawString(0, 0, "Hello World");    //(0,0)の位置にHello Worldを表示
+  display.display();   //指定された情報を描画
 }
 
 
