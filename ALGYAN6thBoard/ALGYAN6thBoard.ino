@@ -8,6 +8,10 @@
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
 
+// for relay
+#define GPIO_RELAY_COM  19
+bool relayValue = false;
+
 // for angle
 #define GPIO_ANGLE_COM  32
 #define THRESHOLD_MIN 25
@@ -54,6 +58,7 @@ int MAXTEMP = 35; // For color mapping
 int max_v = 35; //Value of current max temp
 int max_cam_v = 300; // Spec in datasheet
 int resetMaxTemp = 45;
+float spot_f = 0.0;
 
 //the colors we will be using
 
@@ -113,13 +118,22 @@ void displayValue(int currentValue,int thresholdValue)
     display.display();   //指定された情報を描画
     String current = String(currentValue);
     String th = String(thresholdValue);
-    display.drawString(0, 0, current);
-    display.drawString(0, 16, th);
+    display.drawString(0, 0 , "Current  :" + current);
+    display.drawString(0, 20, "Threshold:" + th);
     display.display();   //指定された情報を描画
   }
 
   preCurrentValue = currentValue;
   preThresholdValue = thresholdValue;
+}
+
+void setRelay(bool value){
+  relayValue = value;
+  if(value){
+    digitalWrite(GPIO_RELAY_COM, HIGH);
+  }else{
+    digitalWrite(GPIO_RELAY_COM, LOW);
+  }
 }
 
 void setup()
@@ -157,7 +171,9 @@ void setup()
   
   pinMode(PIN_BUZZAR, OUTPUT);
   digitalWrite(PIN_BUZZAR, LOW);
-
+  // for relay
+  pinMode(GPIO_RELAY_COM, OUTPUT);
+  setRelay(false);
   // for angle
   pinMode(GPIO_ANGLE_COM, INPUT);
 
@@ -263,13 +279,29 @@ void loop()
   int spot_v = pixels[360];
   spot_v = pixels[768/2];
   
+  // 変な値を取った場合は無視する
+  if((0 < pixels[768/2]) && (pixels[768/2] < 100)){
+    spot_f = pixels[768/2];
+  }
+
+  // for relay
+  {
+    bool preRelayValue = relayValue;
+    
+    if((spot_f > (float)thresholdValue) && relayValue == false){
+      setRelay(true);  
+    }else if((spot_f < ((float)thresholdValue - 1.0)) && relayValue == true){
+      setRelay(false);  
+    }
+  }
+  
   // for angle
   {
     int cur_sensorValue = analogRead(GPIO_ANGLE_COM);
     thresholdValue = (cur_sensorValue / thresholdResolution) + THRESHOLD_MIN;
   }
 
-  displayValue((int)spot_v,thresholdValue);
+  displayValue((int)spot_f,thresholdValue);
   
    for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
   {
@@ -289,6 +321,7 @@ void loop()
   endTime = loopTime;
   fps = 1000 / (endTime - startTime);
 
+  delay(400);
 }
 
 
