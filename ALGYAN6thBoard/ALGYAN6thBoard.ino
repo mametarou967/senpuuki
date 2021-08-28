@@ -4,6 +4,9 @@
 #include "MLX90640_API.h"
 #include "MLX90640_I2C_Driver.h"
 
+#define DELAY_MSEC  500
+#define DISP_UPDATE_MSEC  1000
+
 // Pin define
 #define PIN_I2C_SDA 21
 #define PIN_I2C_SCL 22
@@ -105,6 +108,8 @@ long loopTime, startTime, endTime, fps;
 
 SSD1306  display(OLED_SSD1315_address, PIN_I2C_SDA, PIN_I2C_SCL); //SSD1306インスタンスの作成（I2Cアドレス,SDA,SCL）
 
+int dispUpdateCount = 0;
+
 void displayValue(int currentValue,int thresholdValue)
 {
   static int preCurrentValue = 0;
@@ -118,8 +123,8 @@ void displayValue(int currentValue,int thresholdValue)
     display.display();   //指定された情報を描画
     String current = String(currentValue);
     String th = String(thresholdValue);
-    display.drawString(0, 0 , "Current  :" + current);
-    display.drawString(0, 20, "Threshold:" + th);
+    display.drawString(0, 0 , "C :" + current);
+    display.drawString(0, 20, "Th:" + th);
     display.display();   //指定された情報を描画
   }
 
@@ -301,7 +306,12 @@ void loop()
     thresholdValue = (cur_sensorValue / thresholdResolution) + THRESHOLD_MIN;
   }
 
-  displayValue((int)spot_f,thresholdValue);
+  // 表示の更新
+  dispUpdateCount = dispUpdateCount + 1;
+  if(dispUpdateCount > DISP_UPDATE_MSEC / DELAY_MSEC){
+    displayValue((int)spot_f,thresholdValue);
+    dispUpdateCount = 0;
+  }
   
    for ( int itemp = 0; itemp < sizeof(pixels) / sizeof(pixels[0]); itemp++ )
   {
@@ -321,7 +331,7 @@ void loop()
   endTime = loopTime;
   fps = 1000 / (endTime - startTime);
 
-  delay(400);
+  delay(DELAY_MSEC);
 }
 
 
