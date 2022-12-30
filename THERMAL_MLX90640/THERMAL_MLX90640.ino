@@ -89,7 +89,6 @@ long loopTime, startTime, endTime, fps;
 
 // for relay
 #define GPIO_RELAY_COM  17
-#define THRESHOLD 30
 bool relayValue = false;
 
 // for angle
@@ -284,7 +283,7 @@ void loop()
   {
     bool preRelayValue = relayValue;
     
-    if((spot_f >= (float)thresholdValue) && relayValue == false){
+    if((spot_f > (float)thresholdValue) && relayValue == false){
       setRelay(true);  
     }else if((spot_f < (float)thresholdValue) && relayValue == true){
       setRelay(false);  
